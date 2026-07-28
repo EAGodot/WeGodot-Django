@@ -1,0 +1,316 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block extrastyle %}
+{{ block.super }}
+<style>
+    .preview-container {
+        max-width: 1000px;
+        margin: 20px auto;
+        padding: 20px;
+    }
+    
+    .preview-header {
+        background: #fff;
+        border: 1px solid #eaeaea;
+        border-radius: 4px;
+        padding: 20px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .preview-badge {
+        display: inline-block;
+        background: #ff6b6b;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 3px;
+        font-size: 12px;
+        margin-bottom: 10px;
+    }
+    
+    .survey-title {
+        font-size: 24px;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    
+    .question-item {
+        background: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 20px;
+        margin-bottom: 15px;
+    }
+    
+    .question-header {
+        display: flex;
+        align-items: flex-start;
+        margin-bottom: 15px;
+    }
+    
+    .question-number {
+        background: #417690;
+        color: white;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        margin-right: 15px;
+        flex-shrink: 0;
+    }
+    
+    .question-text {
+        font-size: 16px;
+        font-weight: bold;
+        color: #333;
+        flex-grow: 1;
+    }
+    
+    .required-mark {
+        color: #ba2121;
+        margin-left: 5px;
+    }
+    
+    .options-container {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .option-item {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+    }
+    
+    .option-item input {
+        margin-right: 10px;
+    }
+    
+    .essay-textarea {
+        width: 100%;
+        min-height: 100px;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-family: inherit;
+        resize: vertical;
+    }
+    
+    .preview-footer {
+        text-align: center;
+        margin-top: 30px;
+        padding: 20px;
+        border-top: 1px solid #ddd;
+    }
+    
+    .submit-btn {
+        background: #417690;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    
+    .submit-btn:hover {
+        background: #205067;
+    }
+    
+    .submit-btn:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+    }
+    
+    .alert {
+        padding: 10px 15px;
+        border-radius: 4px;
+        margin-bottom: 20px;
+    }
+    
+    .alert-warning {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        color: #856404;
+    }
+    
+    .alert-success {
+        background: #d1edff;
+        border: 1px solid #b3d9ff;
+        color: #004085;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="preview-container">
+    <div class="preview-header">
+        <div class="preview-badge">👁️ 预览模式</div>
+        <h1 class="survey-title">{{ survey.title }}</h1>
+        {% if survey.description %}
+            <p>{{ survey.description }}</p>
+        {% endif %}
+    </div>
+    
+    <div class="alert alert-warning">
+        <strong>预览提示：</strong> {{ preview_message }}
+    </div>
+    
+    <form id="surveyForm">
+        {% with questions=survey.questions %}
+            <!-- 选择题 -->
+            {% for question in questions.multipleChoiceQuestions %}
+            <div class="question-item" data-question-id="{{ question.id }}">
+                <div class="question-header">
+                    <div class="question-number">Q{{ forloop.counter }}</div>
+                    <div class="question-text">
+                        {{ question.text }}
+                        {% if question.required %}<span class="required-mark">*</span>{% endif %}
+                    </div>
+                </div>
+                
+                <div class="options-container">
+                    {% for option in question.options %}
+                    <div class="option-item">
+                        <input 
+                            type="{% if question.type == 'single' %}radio{% else %}checkbox{% endif %}" 
+                            name="question-{{ question.id }}" 
+                            value="{{ option.value }}"
+                            id="q{{ question.id }}-opt{{ forloop.counter }}"
+                            {% if question.required %}required{% endif %}
+                        >
+                        <label for="q{{ question.id }}-opt{{ forloop.counter }}">
+                            {{ option.text }}
+                        </label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endfor %}
+            
+            <!-- 论述题 -->
+            {% for question in questions.essayQuestions %}
+            <div class="question-item" data-question-id="{{ question.id }}">
+                <div class="question-header">
+                    <div class="question-number">Q{{ forloop.counter|add:questions.multipleChoiceQuestions|length }}</div>
+                    <div class="question-text">
+                        {{ question.text }}
+                        {% if question.required %}<span class="required-mark">*</span>{% endif %}
+                    </div>
+                </div>
+                
+                <textarea 
+                    class="essay-textarea" 
+                    name="question-{{ question.id }}" 
+                    placeholder="{{ question.placeholder|default:'请在此输入您的回答...' }}"
+                    {% if question.required %}required{% endif %}
+                ></textarea>
+            </div>
+            {% endfor %}
+        {% endwith %}
+    </form>
+    
+    <div class="preview-footer">
+        <button type="button" onclick="submitSurvey()" class="submit-btn" id="submitBtn">
+            提交预览
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extrajs %}
+<script>
+    let isSubmitting = false;
+    
+    function collectAnswers() {
+        const form = document.getElementById('surveyForm');
+        const answers = {};
+        
+        // 收集选择题答案
+        const choiceInputs = form.querySelectorAll('input[type="radio"], input[type="checkbox"]');
+        choiceInputs.forEach(input => {
+            if (input.type === 'radio' && input.checked) {
+                const questionId = input.name.replace('question-', '');
+                answers[questionId] = input.value;
+            } else if (input.type === 'checkbox' && input.checked) {
+                const questionId = input.name.replace('question-', '');
+                if (!answers[questionId]) {
+                    answers[questionId] = [];
+                }
+                answers[questionId].push(input.value);
+            }
+        });
+        
+        // 收集论述题答案
+        const essayInputs = form.querySelectorAll('textarea');
+        essayInputs.forEach(textarea => {
+            const questionId = textarea.name.replace('question-', '');
+            answers[questionId] = textarea.value.trim();
+        });
+        
+        return answers;
+    }
+    
+    async function submitSurvey() {
+        if (isSubmitting) return;
+        
+        const submitBtn = document.getElementById('submitBtn');
+        const originalText = submitBtn.textContent;
+        
+        try {
+            isSubmitting = true;
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+            
+            const answers = collectAnswers();
+            
+            const response = await fetch("{% url 'survey-preview-submit' survey.id %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({ answers: answers })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showMessage('✅ ' + result.message, 'success');
+            } else {
+                showMessage('❌ ' + result.error, 'error');
+            }
+            
+        } catch (error) {
+            showMessage('❌ 提交失败: ' + error.message, 'error');
+        } finally {
+            isSubmitting = false;
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    }
+    
+    function showMessage(message, type) {
+        // 移除现有的消息
+        const existingAlert = document.querySelector('.alert:not(.alert-warning)');
+        if (existingAlert) {
+            existingAlert.remove();
+        }
+        
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type}`;
+        alert.textContent = message;
+        
+        const content = document.querySelector('.preview-container');
+        content.insertBefore(alert, content.querySelector('#surveyForm'));
+        
+        // 自动滚动到顶部查看消息
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+</script>
+{% endblock %}

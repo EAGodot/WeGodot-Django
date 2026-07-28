@@ -1,0 +1,23 @@
+.json-file-config,
+.json-text-config {
+    transition: all 0.3s ease;
+}
+
+.field-questions_preview pre {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 10px;
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.field-config_info {
+    background: #e7f3ff;
+    border: 1px solid #b3d9ff;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+}

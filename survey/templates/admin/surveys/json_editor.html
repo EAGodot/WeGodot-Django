@@ -1,0 +1,290 @@
+{% load static %}
+<div class="json-editor-wrapper">
+    <div class="json-editor-toolbar">
+        <button type="button" class="button validate-json-btn">
+            ✅ 验证JSON格式
+        </button>
+        <span class="validation-result"></span>
+    </div>
+    
+    <!-- 这是唯一的文本框 -->
+    <textarea 
+        id="{{ textarea_id }}" 
+        name="{{ field_name }}"
+        class="json-textarea"
+        placeholder='示例格式：
+{
+  "multipleChoiceQuestions": [
+    {
+      "id": 1,
+      "type": "single",
+      "text": "您对我们的产品满意度如何？",
+      "required": true,
+      "options": [
+        {"value": "very_satisfied", "text": "非常满意"},
+        {"value": "satisfied", "text": "满意"}
+      ]
+    }
+  ],
+  "essayQuestions": [
+    {
+      "id": 2,
+      "type": "essay",
+      "text": "请提出您的建议",
+      "required": false
+    }
+  ]
+}'
+    >{{ field_value }}</textarea>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const jsonTextarea = document.getElementById('{{ textarea_id }}');
+    const validateBtn = document.querySelector('.validate-json-btn');
+    const validationResult = document.querySelector('.validation-result');
+    
+    // 验证JSON格式
+    validateBtn.addEventListener('click', function() {
+        validateJSON();
+    });
+    
+    // 自动验证（焦点离开时）
+    jsonTextarea.addEventListener('blur', function() {
+        validateJSON();
+    });
+    
+    function validateJSON() {
+        const value = jsonTextarea.value.trim();
+        
+        if (!value) {
+            validationResult.textContent = '请输入JSON内容';
+            validationResult.style.color = '#6c757d';
+            jsonTextarea.classList.remove('valid', 'invalid', 'warning');
+            return;
+        }
+        
+        try {
+            const jsonData = JSON.parse(value);
+            
+            // 基础结构验证
+            const errors = validateStructure(jsonData);
+            
+            if (errors.length === 0) {
+                validationResult.textContent = '✅ JSON格式正确';
+                validationResult.style.color = 'green';
+                jsonTextarea.classList.remove('invalid', 'warning');
+                jsonTextarea.classList.add('valid');
+            } else {
+                validationResult.textContent = '⚠️ ' + errors.join('; ');
+                validationResult.style.color = 'orange';
+                jsonTextarea.classList.remove('valid', 'invalid');
+                jsonTextarea.classList.add('warning');
+            }
+            
+        } catch (error) {
+            validationResult.textContent = '❌ JSON格式错误: ' + error.message;
+            validationResult.style.color = 'red';
+            jsonTextarea.classList.remove('valid', 'warning');
+            jsonTextarea.classList.add('invalid');
+        }
+    }
+    
+    function validateStructure(data) {
+        const errors = [];
+        
+        // 检查必要字段
+        if (!data.multipleChoiceQuestions) {
+            errors.push('缺少 multipleChoiceQuestions 字段');
+        } else if (!Array.isArray(data.multipleChoiceQuestions)) {
+            errors.push('multipleChoiceQuestions 必须是数组');
+        }
+        
+        if (!data.essayQuestions) {
+            errors.push('缺少 essayQuestions 字段');
+        } else if (!Array.isArray(data.essayQuestions)) {
+            errors.push('essayQuestions 必须是数组');
+        }
+        
+        // 验证选择题
+        if (data.multipleChoiceQuestions && Array.isArray(data.multipleChoiceQuestions)) {
+            data.multipleChoiceQuestions.forEach((q, index) => {
+                if (!q || typeof q !== 'object') {
+                    errors.push(`选择题 ${index + 1} 不是有效的对象`);
+                    return;
+                }
+                
+                if (!q.id && q.id !== 0) errors.push(`选择题 ${index + 1} 缺少 id 字段`);
+                if (!q.text) errors.push(`选择题 ${index + 1} 缺少 text 字段`);
+                if (!q.type || !['single', 'multiple'].includes(q.type)) {
+                    errors.push(`选择题 ${index + 1} 的 type 必须是 "single" 或 "multiple"`);
+                }
+                if (!q.options) {
+                    errors.push(`选择题 ${index + 1} 缺少 options 字段`);
+                } else if (!Array.isArray(q.options)) {
+                    errors.push(`选择题 ${index + 1} 的 options 必须是数组`);
+                } else if (q.options.length === 0) {
+                    errors.push(`选择题 ${index + 1} 的 options 不能为空数组`);
+                } else {
+                    q.options.forEach((opt, optIndex) => {
+                        if (!opt || typeof opt !== 'object') {
+                            errors.push(`选择题 ${index + 1} 选项 ${optIndex + 1} 不是有效的对象`);
+                            return;
+                        }
+                        if (!opt.value && opt.value !== '') errors.push(`选择题 ${index + 1} 选项 ${optIndex + 1} 缺少 value 字段`);
+                        if (!opt.text && opt.text !== '') errors.push(`选择题 ${index + 1} 选项 ${optIndex + 1} 缺少 text 字段`);
+                    });
+                }
+            });
+        }
+        
+        // 验证论述题
+        if (data.essayQuestions && Array.isArray(data.essayQuestions)) {
+            data.essayQuestions.forEach((q, index) => {
+                if (!q || typeof q !== 'object') {
+                    errors.push(`论述题 ${index + 1} 不是有效的对象`);
+                    return;
+                }
+                
+                if (!q.id && q.id !== 0) errors.push(`论述题 ${index + 1} 缺少 id 字段`);
+                if (!q.text) errors.push(`论述题 ${index + 1} 缺少 text 字段`);
+                if (q.type !== 'essay') errors.push(`论述题 ${index + 1} 的 type 必须是 "essay"`);
+            });
+        }
+        
+        return errors;
+    }
+    
+    // 初始验证（如果有内容）
+    if (jsonTextarea.value.trim()) {
+        validateJSON();
+    }
+});
+</script>
+
+<style>
+.json-editor-wrapper {
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: white;
+    overflow: hidden;
+    width: 100%;
+    max-width: 900px; /* 合适的最大宽度 */
+}
+
+.json-editor-toolbar {
+    padding: 10px 15px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.json-editor-toolbar .button {
+    padding: 6px 12px;
+    background: #17a2b8;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.json-editor-toolbar .button:hover {
+    background: #138496;
+}
+
+.validation-result {
+    font-size: 12px;
+    font-weight: 500;
+    flex: 1;
+}
+
+.json-textarea {
+    /* 宽度设置 - 合适的宽度 */
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    
+    /* 尺寸设置 */
+    height: 450px;
+    min-height: 400px;
+    
+    /* 边框和内边距 */
+    border: none;
+    padding: 15px;
+    
+    /* 字体和排版 */
+    font-family: 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    
+    /* 其他样式 */
+    resize: vertical;
+    outline: none;
+    background: white;
+    display: block;
+    box-sizing: border-box;
+}
+
+.json-textarea:focus {
+    background: #fafafa;
+}
+
+/* 验证状态样式 */
+.json-textarea.valid {
+    border-left: 4px solid #28a745;
+}
+
+.json-textarea.invalid {
+    border-left: 4px solid #dc3545;
+}
+
+.json-textarea.warning {
+    border-left: 4px solid #ffc107;
+}
+
+.json-textarea::placeholder {
+    color: #6c757d;
+    opacity: 0.7;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+    .json-editor-wrapper {
+        max-width: 800px;
+    }
+}
+
+@media (max-width: 992px) {
+    .json-editor-wrapper {
+        max-width: 700px;
+    }
+}
+
+@media (max-width: 768px) {
+    .json-editor-wrapper {
+        max-width: 100%;
+    }
+    
+    .json-textarea {
+        height: 350px;
+        font-size: 12px;
+        padding: 10px;
+    }
+    
+    .json-editor-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    
+    .validation-result {
+        text-align: center;
+    }
+}
+</style>
