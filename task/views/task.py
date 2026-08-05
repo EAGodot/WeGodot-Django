@@ -45,7 +45,7 @@ class TaskListView(APIView):
 
         for task in page_tasks:
             try:
-                creator = Client.objects.get(user_id=task.creator_id, deleted=False)
+                creator = Client.objects.get(id=task.creator_id, deleted=False)
                 creator_name = creator.username
             except Client.DoesNotExist:
                 creator_name = "未知用户"
@@ -92,7 +92,7 @@ class TaskDetailView(APIView):
             return Response({'result': [{'code': 404, 'message': '任务不存在'}]})
 
         try:
-            creator = Client.objects.get(user_id=task.creator_id, deleted=False)
+                creator = Client.objects.get(id=task.creator_id, deleted=False)
             creator_name = creator.username
         except Client.DoesNotExist:
             creator_name = "未知用户"
@@ -194,7 +194,7 @@ class MyTaskView(APIView):
         for participant in page_participants:
             task = participant.task
             try:
-                creator = Client.objects.get(user_id=task.creator_id, deleted=False)
+                creator = Client.objects.get(id=task.creator_id, deleted=False)
                 creator_name = creator.username
             except Client.DoesNotExist:
                 creator_name = "未知用户"

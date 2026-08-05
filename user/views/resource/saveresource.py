@@ -49,7 +49,7 @@ class SaveResourceView(APIView):
             file_type = data.get('type', '')
             file_path = data.get('path', '')
             file_size = data.get('size', 0)
-            mime_type = data.get('mimeType', '')
+            mime_type = data.get('mimeType', '') or data.get('type', '')
             
             # 驗證必需字段
             missing_fields = []
