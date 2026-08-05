@@ -18,7 +18,12 @@ class TaskListView(APIView):
         current = int(data.get('current', 0))
         size = int(data.get('size', 0))
         searchKey = data.get('searchKey', '').strip()
-        task_status = data.get('status', '').strip()
+        task_status = data.get('status', '')
+        if task_status != '':
+            try:
+                task_status = int(task_status)
+            except ValueError:
+                task_status = None
 
         dataall = []
         data_list = []
