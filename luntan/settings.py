@@ -54,7 +54,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # 服務器存儲路徑
 
 
 # DeepSeek API配置
-DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', '')
+DEEPSEEK_API_KEY = os.environ.get('DEEPSEEK_API_KEY', 'xxx')
 
 
 
@@ -86,6 +86,21 @@ ALLOWED_HOSTS = [
     '.ngrok-free.dev',         
 
 ]
+
+
+CSRF_TRUSTED_ORIGINS = [
+    "https://2501b345.r25.cpolar.top",   # 当前有效的域名
+    "http://2501b345.r25.cpolar.top",   # 当前有效的域名
+]
+
+
+
+
+
+
+#20260729 信任crsf
+
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -112,13 +127,17 @@ MIDDLEWARE = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',  #20260729 屏蔽csrf驗證
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'luntan.urls'
+
+
+
+
 
 
 #模板會進入app文件夾下templates下尋找
