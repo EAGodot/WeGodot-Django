@@ -23,7 +23,8 @@ urlpatterns = [
     #20251027添加
     path('', include('blog.urls.index')),
     path('', include('survey.urls.index')),
-    path('', include('godot.urls.index'))    
+    path('', include('godot.urls.index')),
+    path('', include('task.urls.index'))
 ]
 
 # deepseek增加的圖片本地服務

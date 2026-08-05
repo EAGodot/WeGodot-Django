@@ -117,6 +117,7 @@ INSTALLED_APPS = [
     'blog.apps.BlogConfig',    # 新增博客应用 ← 推荐这种方式
     'survey.apps.SurveyConfig',    # 新增問卷应用 ← 推荐这种方式
     'godot.apps.GodotConfig',    # 新增博客应用 ← 推荐这种方式
+    'task.apps.TaskConfig',    # 新增任务应用 ← 推荐这种方式
 
     'rest_framework',
     'rest_framework.authtoken',
