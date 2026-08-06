@@ -181,6 +181,12 @@ class MyTaskView(APIView):
         if not user_id:
             return Response({'result': [{'code': 400, 'message': 'user_id 不能为空'}]})
 
+        try:
+            client = Client.objects.get(user_id=user_id, deleted=False)
+            user_id = client.id
+        except Client.DoesNotExist:
+            return Response({'result': [{'code': 404, 'message': '用户不存在'}]})
+
         dataall = []
         data_list = []
 
@@ -238,6 +244,12 @@ class CreatorTaskView(APIView):
         if not user_id:
             return Response({'result': [{'code': 400, 'message': 'user_id 不能为空'}]})
 
+        try:
+            client = Client.objects.get(user_id=user_id, deleted=False)
+            user_id = client.id
+        except Client.DoesNotExist:
+            return Response({'result': [{'code': 404, 'message': '用户不存在'}]})
+
         dataall = []
         data_list = []
 
@@ -283,6 +295,12 @@ class CompleteTaskView(APIView):
         user_id = request.data.get('user_id')
         if not task_id or not user_id:
             return Response({'result': [{'code': 400, 'message': 'task_id 和 user_id 不能为空'}]})
+
+        try:
+            client = Client.objects.get(user_id=user_id, deleted=False)
+            user_id = client.id
+        except Client.DoesNotExist:
+            return Response({'result': [{'code': 404, 'message': '用户不存在'}]})
 
         try:
             task = Task.objects.get(id=task_id, deleted=False)
@@ -342,6 +360,12 @@ class UploadProofView(APIView):
 
         if task.status != 0:
             return Response({'result': [{'code': 400, 'message': '任务已关闭或已完成'}]})
+
+        try:
+            client = Client.objects.get(user_id=user_id, deleted=False)
+            user_id = client.id
+        except Client.DoesNotExist:
+            return Response({'result': [{'code': 404, 'message': '用户不存在'}]})
 
         try:
             participant = TaskParticipant.objects.get(task=task, user_id=user_id, deleted=False)
