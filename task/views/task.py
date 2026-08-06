@@ -307,6 +307,7 @@ class CompleteTaskView(APIView):
             participant.save()
 
         task.balance = 0
+        task.completed_count = participants.count()
         task.status = 1
         task.save()
 
