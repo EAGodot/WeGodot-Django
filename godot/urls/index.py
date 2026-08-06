@@ -11,4 +11,6 @@ urlpatterns = [
     path('api/markdown/update/<int:doc_id>/', views.MarkdownUpdateView.as_view(), name='markdown-update'),
     path('api/markdown/delete/<int:doc_id>/', views.MarkdownDeleteView.as_view(), name='markdown-delete'),
     path('api/markdown/previewable/', views.MarkdownPreviewableView.as_view(), name='markdown-previewable'),
+    # 量化交易日志
+    path('api/quant/log/', views.RunManageLog.as_view(), name='quant-log'),
 ]

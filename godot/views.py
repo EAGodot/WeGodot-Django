@@ -22,6 +22,7 @@ from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 import os
+import time
 from django.conf import settings
 
 
@@ -37,16 +38,16 @@ class MarkdownImage(APIView):
     
     def get(self, request):
         """
-        获取固定故事配图
-        返回格式：
-        {
-            'success': True,
-            'data': {
-                'image_url': 'http://xxx/media/story_image.jpg',
-                'filename': 'story_image.jpg',
-                'alt': '图片描述'
-            }
-        }
+         获取固定故事配图
+         返回格式：
+         {
+             'success': True,
+             'data': {
+                 'image_url': 'http://xxx/media/story_image.jpg',
+                 'filename': 'story_image.jpg',
+                 'alt': '图片描述'
+             }
+         }
         """
         print("=== 获取故事配图 ===")
         print("请求用户:", request.user.username if request.user.is_authenticated else "匿名用户")
@@ -91,7 +92,7 @@ class MarkdownImage(APIView):
             response['Expires'] = '0'
             
             return response           
-           
+            
 
 
         except Exception as e:
@@ -99,6 +100,112 @@ class MarkdownImage(APIView):
             return Response({
                 'success': False,
                 'error': f'获取图片失败: {str(e)}'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+
+
+
+
+    def get_image_url(self, request, timestamp):
+        """
+        构建带时间戳的图片访问URL，破坏浏览器缓存
+        """
+        media_relative_path = f'{self.IMAGE_FILENAME}'
+        base_url = request.build_absolute_uri(settings.MEDIA_URL + media_relative_path)
+        
+        # 添加时间戳参数，强制刷新缓存
+        image_url = f"{base_url}?v={int(timestamp)}"
+        
+        return image_url        
+
+
+
+class RunManageLog(APIView):
+    """
+    获取运行日志
+    从 media 文件夹下读取 run_manage.log 文件内容
+    """
+    permission_classes = [AllowAny]
+    
+    LOG_FILENAME = 'run_manage.log'
+    
+    def get(self, request):
+        """
+        获取日志文件内容
+        返回格式：
+        {
+            'success': True,
+            'data': {
+                'content': '日志内容...',
+                'filename': 'run_manage.log',
+                'size': 1234,
+                'last_modified': '2024-01-01 12:00:00'
+            }
+        }
+        """
+        print("=== 获取运行日志 ===")
+        
+        try:
+            log_path = os.path.join(settings.MEDIA_ROOT, self.LOG_FILENAME)
+            
+            if not os.path.exists(log_path):
+                return Response({
+                    'success': False,
+                    'error': '日志文件不存在',
+                    'data': {
+                        'content': '日志文件尚未生成，请等待策略运行。',
+                        'filename': self.LOG_FILENAME,
+                    }
+                }, status=status.HTTP_404_NOT_FOUND)
+            
+            # 读取日志文件内容，限制最大读取行数防止过大
+            max_lines = 1000
+            lines = []
+            try:
+                with open(log_path, 'r', encoding='utf-8') as f:
+                    for i, line in enumerate(f):
+                        if i >= max_lines:
+                            lines.append(f'\n... 已截断，仅显示最后 {max_lines} 行 ...')
+                            break
+                        lines.append(line)
+            except UnicodeDecodeError:
+                with open(log_path, 'r', encoding='gbk') as f:
+                    for i, line in enumerate(f):
+                        if i >= max_lines:
+                            lines.append(f'\n... 已截断，仅显示最后 {max_lines} 行 ...')
+                            break
+                        lines.append(line)
+            
+            content = ''.join(lines)
+            file_size = os.path.getsize(log_path)
+            file_mtime = os.path.getmtime(log_path)
+            last_modified = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(file_mtime))
+            
+            response = Response({
+                'success': True,
+                'data': {
+                    'content': content,
+                    'filename': self.LOG_FILENAME,
+                    'size': file_size,
+                    'last_modified': last_modified,
+                }
+            })
+            
+            response['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+            response['Pragma'] = 'no-cache'
+            response['Expires'] = '0'
+            
+            return response
+            
+        except Exception as e:
+            print(f"获取日志失败: {str(e)}")
+            return Response({
+                'success': False,
+                'error': f'获取日志失败: {str(e)}',
+                'data': {
+                    'content': f'读取日志失败: {str(e)}',
+                    'filename': self.LOG_FILENAME,
+                }
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
 
