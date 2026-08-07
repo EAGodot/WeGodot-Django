@@ -44,7 +44,11 @@ class LoginView(APIView):
                     try:
                         client = Client.objects.get(user_id=user.id)
                     except Client.DoesNotExist:
-                        return Response({"error": "用戶資料不完整"}, status=400)
+                        client = Client.objects.create(
+                            user=user,
+                            username=user.username,
+                            email=getattr(user, 'email', '') or '',
+                        )
                 else:
                     return Response({"error": "用戶名或密碼錯誤"}, status=400)
 

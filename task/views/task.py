@@ -51,6 +51,7 @@ class TaskListView(APIView):
                 creator_name = "未知用户"
 
             participants_count = TaskParticipant.objects.filter(task=task, deleted=False).count()
+            completed_count = TaskParticipant.objects.filter(task=task, status=2, deleted=False).count()
             data_list.append({
                 'id': task.id,
                 'title': task.title,
@@ -58,7 +59,7 @@ class TaskListView(APIView):
                 'amount': float(task.amount),
                 'balance': float(task.balance),
                 'max_participants': task.max_participants,
-                'completed_count': task.completed_count,
+                'completed_count': completed_count,
                 'participants_count': participants_count,
                 'status': task.status,
                 'status_display': task.get_status_display(),
@@ -98,6 +99,7 @@ class TaskDetailView(APIView):
             creator_name = "未知用户"
 
         participants_count = TaskParticipant.objects.filter(task=task, deleted=False).count()
+        completed_count = TaskParticipant.objects.filter(task=task, status=2, deleted=False).count()
 
         return Response({
             'result': [{
@@ -109,7 +111,7 @@ class TaskDetailView(APIView):
                     'amount': float(task.amount),
                     'balance': float(task.balance),
                     'max_participants': task.max_participants,
-                    'completed_count': task.completed_count,
+                    'completed_count': completed_count,
                     'participants_count': participants_count,
                     'status': task.status,
                     'status_display': task.get_status_display(),
@@ -205,13 +207,15 @@ class MyTaskView(APIView):
             except Client.DoesNotExist:
                 creator_name = "未知用户"
 
+            completed_count = TaskParticipant.objects.filter(task=task, status=2, deleted=False).count()
             data_list.append({
                 'id': task.id,
                 'title': task.title,
                 'description': task.description or '',
                 'amount': float(task.amount),
                 'balance': float(task.balance),
-                'completed_count': task.completed_count,
+                'max_participants': task.max_participants,
+                'completed_count': completed_count,
                 'status': task.status,
                 'status_display': task.get_status_display(),
                 'creator_name': creator_name,
@@ -262,6 +266,7 @@ class CreatorTaskView(APIView):
 
         for task in page_tasks:
             participants_count = TaskParticipant.objects.filter(task=task, deleted=False).count()
+            completed_count = TaskParticipant.objects.filter(task=task, status=2, deleted=False).count()
             data_list.append({
                 'id': task.id,
                 'title': task.title,
@@ -269,7 +274,7 @@ class CreatorTaskView(APIView):
                 'amount': float(task.amount),
                 'balance': float(task.balance),
                 'max_participants': task.max_participants,
-                'completed_count': task.completed_count,
+                'completed_count': completed_count,
                 'participants_count': participants_count,
                 'status': task.status,
                 'status_display': task.get_status_display(),
@@ -468,6 +473,88 @@ class TaskParticipantsView(APIView):
             'result': [{
                 'code': 200,
                 'data': data_list,
+            }]
+        })
+
+
+class DeleteTaskView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = [TokenAuthentication]
+
+    def post(self, request):
+        task_id = request.data.get('task_id')
+        user_id = request.data.get('user_id')
+
+        if not task_id or not user_id:
+            return Response({'result': [{'code': 400, 'message': 'task_id 和 user_id 不能为空'}]})
+
+        try:
+            task = Task.objects.get(id=task_id, deleted=False)
+        except Task.DoesNotExist:
+            return Response({'result': [{'code': 404, 'message': '任务不存在'}]})
+
+        if task.creator_id != user_id:
+            return Response({'result': [{'code': 403, 'message': '只有发布者可以删除任务'}]})
+
+        if task.status != 0:
+            return Response({'result': [{'code': 400, 'message': '只能删除进行中的任务'}]})
+
+        task.deleted = True
+        task.save()
+
+        return Response({
+            'result': [{
+                'code': 200,
+                'message': '删除成功',
+            }]
+        })
+
+
+class UpdateTaskAmountView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = [TokenAuthentication]
+
+    def post(self, request):
+        task_id = request.data.get('task_id')
+        user_id = request.data.get('user_id')
+        amount = request.data.get('amount')
+
+        if not task_id or not user_id or amount is None:
+            return Response({'result': [{'code': 400, 'message': 'task_id、user_id 和 amount 不能为空'}]})
+
+        try:
+            task = Task.objects.get(id=task_id, deleted=False)
+        except Task.DoesNotExist:
+            return Response({'result': [{'code': 404, 'message': '任务不存在'}]})
+
+        if task.creator_id != user_id:
+            return Response({'result': [{'code': 403, 'message': '只有发布者可以修改金额'}]})
+
+        if task.status != 0:
+            return Response({'result': [{'code': 400, 'message': '只能修改进行中任务的金额'}]})
+
+        try:
+            amount = float(amount)
+            if amount <= 0:
+                raise ValueError()
+        except (ValueError, TypeError):
+            return Response({'result': [{'code': 400, 'message': '金额必须大于0'}]})
+
+        if amount < task.balance:
+            return Response({'result': [{'code': 400, 'message': '新金额不能小于已分配余额'}]})
+
+        task.amount = amount
+        task.balance = amount
+        task.save()
+
+        return Response({
+            'result': [{
+                'code': 200,
+                'message': '修改成功',
+                'data': {
+                    'amount': float(task.amount),
+                    'balance': float(task.balance),
+                }
             }]
         })
 
