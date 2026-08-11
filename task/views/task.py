@@ -507,9 +507,6 @@ class DeleteTaskView(APIView):
         if task.creator_id != client.id:
             return Response({'result': [{'code': 403, 'message': '只有发布者可以删除任务'}]})
 
-        if task.status != 0:
-            return Response({'result': [{'code': 400, 'message': '只能删除进行中的任务'}]})
-
         task.deleted = True
         task.save()
 
