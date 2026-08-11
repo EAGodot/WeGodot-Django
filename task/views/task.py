@@ -64,6 +64,7 @@ class TaskListView(APIView):
                 'status': task.status,
                 'status_display': task.get_status_display(),
                 'creator_id': task.creator_id,
+                'creator_user_id': creator.user_id if creator else None,
                 'creator_name': creator_name,
                 'create_time': task.create_time,
             })
@@ -116,6 +117,7 @@ class TaskDetailView(APIView):
                     'status': task.status,
                     'status_display': task.get_status_display(),
                     'creator_id': task.creator_id,
+                    'creator_user_id': creator.user_id if creator else None,
                     'creator_name': creator_name,
                     'create_time': task.create_time,
                     'update_time': task.update_time,
@@ -218,6 +220,8 @@ class MyTaskView(APIView):
                 'completed_count': completed_count,
                 'status': task.status,
                 'status_display': task.get_status_display(),
+                'creator_id': task.creator_id,
+                'creator_user_id': creator.user_id if creator else None,
                 'creator_name': creator_name,
                 'participant_status': participant.get_status_display(),
                 'participant_status_code': participant.status,
@@ -278,6 +282,8 @@ class CreatorTaskView(APIView):
                 'participants_count': participants_count,
                 'status': task.status,
                 'status_display': task.get_status_display(),
+                'creator_id': task.creator_id,
+                'creator_user_id': task.creator.user_id if task.creator else None,
                 'create_time': task.create_time,
             })
 
