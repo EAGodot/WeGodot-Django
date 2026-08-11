@@ -495,19 +495,20 @@ class DeleteTaskView(APIView):
             return Response({'result': [{'code': 400, 'message': 'task_id 和 user_id 不能为空'}]})
 
         try:
-            task = Task.objects.get(id=task_id, deleted=False)
+            task = Task.objects.get(id=task_id)
         except Task.DoesNotExist:
             return Response({'result': [{'code': 404, 'message': '任务不存在'}]})
 
-        try:
-            client = Client.objects.get(user_id=user_id, deleted=False)
-        except Client.DoesNotExist:
-            return Response({'result': [{'code': 404, 'message': '用户不存在'}]})
+        if not task.deleted:
+            try:
+                client = Client.objects.get(user_id=user_id, deleted=False)
+            except Client.DoesNotExist:
+                return Response({'result': [{'code': 404, 'message': '用户不存在'}]})
 
-        if task.creator_id != client.id:
-            participant = TaskParticipant.objects.filter(task=task, user=client, deleted=False).first()
-            if not participant:
-                return Response({'result': [{'code': 403, 'message': '只有发布者或参与者可以删除任务'}]})
+            if task.creator_id != client.id:
+                participant = TaskParticipant.objects.filter(task=task, user=client, deleted=False).first()
+                if not participant:
+                    return Response({'result': [{'code': 403, 'message': '只有发布者或参与者可以删除任务'}]})
 
         task.deleted = True
         task.save()
