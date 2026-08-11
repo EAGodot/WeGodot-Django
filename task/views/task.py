@@ -499,7 +499,12 @@ class DeleteTaskView(APIView):
         except Task.DoesNotExist:
             return Response({'result': [{'code': 404, 'message': '任务不存在'}]})
 
-        if task.creator_id != user_id:
+        try:
+            client = Client.objects.get(user_id=user_id, deleted=False)
+        except Client.DoesNotExist:
+            return Response({'result': [{'code': 404, 'message': '用户不存在'}]})
+
+        if task.creator_id != client.id:
             return Response({'result': [{'code': 403, 'message': '只有发布者可以删除任务'}]})
 
         if task.status != 0:
@@ -533,7 +538,12 @@ class UpdateTaskAmountView(APIView):
         except Task.DoesNotExist:
             return Response({'result': [{'code': 404, 'message': '任务不存在'}]})
 
-        if task.creator_id != user_id:
+        try:
+            client = Client.objects.get(user_id=user_id, deleted=False)
+        except Client.DoesNotExist:
+            return Response({'result': [{'code': 404, 'message': '用户不存在'}]})
+
+        if task.creator_id != client.id:
             return Response({'result': [{'code': 403, 'message': '只有发布者可以修改金额'}]})
 
         if task.status != 0:
