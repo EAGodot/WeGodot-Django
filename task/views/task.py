@@ -194,7 +194,7 @@ class MyTaskView(APIView):
         dataall = []
         data_list = []
 
-        query = Q(user_id=user_id, deleted=False)
+        query = Q(user_id=user_id, deleted=False, task__deleted=False)
         participants = TaskParticipant.objects.filter(query).order_by('-create_time')
         total = participants.count()
         start = (current - 1) * size if current and size else 0
